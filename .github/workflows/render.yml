@@ -36,9 +36,22 @@ jobs:
       - name: Run render script
         run: python main.py
 
-      - name: Upload video artifact
+      - name: Debug - List output files (Troubleshooting)
+        run: |
+          ls -la output/ || echo "No output folder found"
+
+      - name: Upload video artifact (Fixed path)
         uses: actions/upload-artifact@v4
         with:
           name: final-video
-          path: output/final_video.mp4
+          path: output/*.mp4
           if-no-files-found: error   # Fail job if video not generated
+
+      - name: Upload to GitHub Release (Direct Browser Download)
+        uses: softprops/action-gh-release@v1
+        if: success()
+        with:
+          tag_name: video-${{ github.run_number }}   # Unique tag every run
+          files: output/final_video.mp4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # Automatic token provided by GitHub
