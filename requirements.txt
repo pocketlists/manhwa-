@@ -1,6 +1,6 @@
 moviepy==1.0.3
 openai
-whisper
+openai-whisper
 sentence-transformers
 numpy
 scikit-learn
