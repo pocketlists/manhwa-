@@ -1,4 +1,12 @@
 import os
+
+# Optional: Agar locally .env use karte hain, toh load karein
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 from src.extract_zip import extract_input_zip
 from src.sequence_selector import SequenceSelector
 from src.video_renderer import render_video
@@ -6,7 +14,7 @@ from src.video_renderer import render_video
 def main():
     print("--- AI MANHWA VIDEO RENDERER ---")
     zip_path = "assets/input.zip"
-    audio_path = "assets/audio.mp3"  # <-- Apni audio file yahan rakhein
+    audio_path = "assets/audio.mp3"
 
     # Step 1: Extract Zip
     if not os.path.exists("assets/images"):
@@ -14,7 +22,7 @@ def main():
     else:
         print("Images already extracted.")
 
-    # Step 2: Load Transcript (Agar transcript.txt nahi hai, toh Whisper use hoga)
+    # Step 2: Load Transcript (Agar nahi hai, Whisper use hoga)
     transcript_lines = []
     if os.path.exists("assets/transcript.txt"):
         with open("assets/transcript.txt", "r", encoding="utf-8") as f:
@@ -26,7 +34,15 @@ def main():
         result = model.transcribe(audio_path)
         transcript_lines = result["text"].split(".")
 
-    # Step 3: Choose Method
+    # Step 3: API Key (YAHAN SE AAYEGI - GitHub Secret)
+    api_key = os.environ.get("OPENAI_API_KEY")
+    
+    if not api_key and (choice not in ["3"]):
+        print("❌ Error: OPENAI_API_KEY not set in environment variables.")
+        print("   (GitHub Actions me Secret add karein, ya locally .env banayein)")
+        return
+
+    # Step 4: Choose Method
     selector = SequenceSelector("assets/images", transcript_lines)
     print("\nChoose Sequence Method:")
     print("1. OpenAI Text Matching (Fastest)")
@@ -34,8 +50,6 @@ def main():
     print("3. Local CLIP (Free/Private)")
     
     choice = input("Enter 1, 2, or 3: ")
-    
-    api_key = "YOUR_OPENAI_API_KEY"  # Yahan apni key daalein
     
     if choice == "1":
         ordered_images = selector.method_text_matching(api_key)
@@ -49,7 +63,7 @@ def main():
 
     print(f"📸 Sequence decided: {ordered_images}")
 
-    # Step 4: Render Video
+    # Step 5: Render Video
     render_video(ordered_images, audio_path)
 
 if __name__ == "__main__":
