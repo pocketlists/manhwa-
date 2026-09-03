@@ -1,4 +1,5 @@
 moviepy==1.0.3
+opencv-python
 openai
 openai-whisper
 sentence-transformers
