@@ -1,7 +1,10 @@
-import os, json, base64
+import os
+import json
+import base64
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
+
 
 class SequenceSelector:
     def __init__(self, images_dir, transcript_lines):
@@ -9,22 +12,20 @@ class SequenceSelector:
         self.transcript_lines = transcript_lines
         self.image_files = sorted([f for f in os.listdir(images_dir) if f.endswith(('.jpg', '.jpeg', '.png'))])
 
-    # METHOD 1: OpenAI Text Matching (Fastest & Cheapest)
     def method_text_matching(self, api_key):
         from openai import OpenAI
         client = OpenAI(api_key=api_key)
-        prompt = f"""
-        Given this story transcript: {self.transcript_lines}
-        And these image filenames: {self.image_files}
-        Sort the filenames in the exact story order. Return ONLY a JSON array of filenames.
-        """
+        prompt = (
+            f"Given this story transcript: {self.transcript_lines} "
+            f"And these image filenames: {self.image_files} "
+            "Sort the filenames in the exact story order. Return ONLY a JSON array of filenames."
+        )
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}]
         )
         return json.loads(response.choices[0].message.content)
 
-    # METHOD 2: OpenAI Vision AI (Most Accurate)
     def method_vision_ai(self, api_key):
         from openai import OpenAI
         client = OpenAI(api_key=api_key)
@@ -42,7 +43,6 @@ class SequenceSelector:
         )
         return json.loads(response.choices[0].message.content)
 
-    # METHOD 3: Local CLIP (100% Free & Private)
     def method_local_clip(self):
         model = SentenceTransformer('clip-ViT-B-32')
         image_embeddings = model.encode([os.path.join(self.images_dir, f) for f in self.image_files])
