@@ -1,0 +1,33 @@
+name: Manhwa Video Renderer
+
+on:
+  workflow_dispatch:    # Manual trigger (Actions tab se "Run workflow" button dabayein) [citation:5]
+  push:                 # Trigger on code push
+    branches: [ main ]
+
+jobs:
+  render-video:
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}  # Secret ko access karein [citation:2]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3  # Code ko runner par load karein [citation:3]
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run render script
+        run: python main.py
+
+      - name: Upload video artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-video
+          path: output/final_video.mp4
