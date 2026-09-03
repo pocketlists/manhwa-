@@ -1,15 +1,17 @@
 name: Manhwa Video Renderer
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:                    # Manually run from Actions tab
   push:
-    branches: [ main ]
+    branches: [ main ]                  # Auto-run on push to main branch
 
 jobs:
   render-video:
     runs-on: ubuntu-latest
     env:
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}   # API key from GitHub Secrets
+      METHOD: "3"                                    # 1=Text, 2=Vision, 3=Local CLIP (Default Free)
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -19,14 +21,17 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Reinstall correct Whisper (Fix package conflict)
-        run: pip uninstall whisper -y && pip install openai-whisper
-
-      - name: Install FFmpeg
+      - name: Install FFmpeg (Essential for Whisper & Audio processing)
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          # Fix for Pillow/ANTIALIAS error: Install OpenCV (MoviePy uses it instead of Pillow)
+          pip install opencv-python
+          # Fix for Whisper package conflict
+          pip uninstall whisper -y || true
+          pip install openai-whisper
 
       - name: Run render script
         run: python main.py
@@ -36,3 +41,4 @@ jobs:
         with:
           name: final-video
           path: output/final_video.mp4
+          if-no-files-found: error   # Fail job if video not generated
