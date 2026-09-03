@@ -1,0 +1,8 @@
+moviepy==1.0.3
+openai
+whisper
+sentence-transformers
+numpy
+scikit-learn
+Pillow
+pydub
