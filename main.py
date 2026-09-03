@@ -1,6 +1,7 @@
 import os
+import sys
 import glob
-import base64
+import subprocess
 
 try:
     from dotenv import load_dotenv
@@ -26,18 +27,28 @@ def find_audio_file(directory="assets"):
 def main():
     print("--- AI MANHWA VIDEO RENDERER ---")
 
-    # Step 1: Auto-Detect ZIP
+    # 1. Auto-Detect ZIP
     zip_path = find_zip_file("assets")
     print(f"Found ZIP: {zip_path}")
 
-    # Step 2: Auto-Detect Audio
+    # 2. Auto-Detect Audio
     audio_path = find_audio_file("assets")
     print(f"Found Audio: {audio_path}")
 
-    # Step 3: Extract Images from ZIP
+    # 3. Fix Audio Encoding (FFmpeg re-encode for GitHub Actions)
+    clean_audio_path = "assets/audio_clean.mp3"
+    subprocess.run([
+        "ffmpeg", "-y", "-i", audio_path,
+        "-ar", "44100", "-ac", "1", "-b:a", "192k",
+        clean_audio_path
+    ], check=True, capture_output=True)
+    audio_path = clean_audio_path
+    print(f"Audio re-encoded to: {audio_path}")
+
+    # 4. Extract Images from ZIP
     extract_input_zip(zip_path)
 
-    # Step 4: Load Transcript (or use Whisper)
+    # 5. Load Transcript (or use Whisper)
     transcript_lines = []
     transcript_path = "assets/transcript.txt"
     if os.path.exists(transcript_path):
@@ -50,17 +61,19 @@ def main():
         result = model.transcribe(audio_path)
         transcript_lines = result["text"].split(".")
 
-    # Step 5: API Key from GitHub Secret
+    # 6. API Key from GitHub Secret
     api_key = os.environ.get("OPENAI_API_KEY")
 
-    # Step 6: Choose Method
-    selector = SequenceSelector("assets/images", transcript_lines)
-    print("\nChoose Sequence Method:")
-    print("1. OpenAI Text Matching (Fastest)")
-    print("2. OpenAI Vision AI (Most Accurate)")
-    print("3. Local CLIP (Free/Private)")
+    # 7. AUTOMATIC METHOD SELECTION (Fixed for GitHub Actions)
+    # Priority: Command Line Argument (python main.py 1) -> Environment Variable (METHOD) -> Default (3)
+    if len(sys.argv) > 1:
+        choice = sys.argv[1].strip()
+        print(f"Method chosen from Command Line: {choice}")
+    else:
+        choice = os.environ.get("METHOD", "3").strip()
+        print(f"Method chosen from Environment Variable: {choice}")
 
-    choice = input("Enter 1, 2, or 3: ").strip()
+    selector = SequenceSelector("assets/images", transcript_lines)
 
     if choice == "1":
         if not api_key:
@@ -77,7 +90,7 @@ def main():
 
     print(f"Sequence decided: {ordered_images}")
 
-    # Step 7: Render Final Video
+    # 8. Render Final Video
     render_video(ordered_images, audio_path)
 
 
